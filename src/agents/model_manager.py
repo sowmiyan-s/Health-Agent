@@ -21,6 +21,35 @@ def get_groq_api_key():
             return key.strip()
     except Exception:
         pass
+        
+    try:
+        import streamlit as st
+        key = st.secrets.get("GROQ_API_KEY")
+        if key and "your-groq" not in key and key.strip() != "":
+            return key.strip()
+    except Exception:
+        pass
+    return None
+
+def get_mistral_api_key():
+    key = get_config_db("MISTRAL_API_KEY")
+    if key and "your-mistral" not in key and key.strip() != "":
+        return key.strip()
+    
+    try:
+        key = os.environ.get("MISTRAL_API_KEY")
+        if key and "your-mistral" not in key and key.strip() != "":
+            return key.strip()
+    except Exception:
+        pass
+        
+    try:
+        import streamlit as st
+        key = st.secrets.get("MISTRAL_API_KEY")
+        if key and "your-mistral" not in key and key.strip() != "":
+            return key.strip()
+    except Exception:
+        pass
     return None
 
 def generate_mock_analysis(data):
@@ -164,15 +193,16 @@ class ModelManager:
 
     def _initialize_clients(self):
         """Initialize API clients for each provider."""
-        key = get_groq_api_key()
-        if not key:
-            self.clients["groq"] = MockGroqClient()
-        else:
+        groq_key = get_groq_api_key()
+        if groq_key:
             try:
-                self.clients["groq"] = groq.Groq(api_key=key)
+                self.clients["groq"] = groq.Groq(api_key=groq_key)
             except Exception as e:
                 logger.error(f"Failed to initialize Groq client: {str(e)}")
-                self.clients["groq"] = MockGroqClient()
+                
+        mistral_key = get_mistral_api_key()
+        if mistral_key:
+            self.clients["mistral"] = mistral_key
 
     def generate_analysis(self, data, system_prompt, retry_count=0):
         """
@@ -182,30 +212,85 @@ class ModelManager:
         if retry_count > 3:
             return {"success": False, "error": "All models failed after multiple retries"}
 
-        # Determine which model tier to use based on retry count
-        if retry_count == 0:
-            tier = ModelTier.PRIMARY
-        elif retry_count == 1:
-            tier = ModelTier.SECONDARY
-        elif retry_count == 2:
-            tier = ModelTier.TERTIARY
+        has_groq = "groq" in self.clients
+        has_mistral = "mistral" in self.clients
+
+        # If neither is set, use local simulated mock
+        if not has_groq and not has_mistral:
+            logger.info("Using mock analysis fallback")
+            mock_client = MockGroqClient()
+            completion = mock_client.chat.completions.create(
+                model="mock",
+                messages=[{"role": "user", "content": str(data)}],
+                temperature=0.7,
+                max_tokens=2000
+            )
+            return {
+                "success": True,
+                "content": completion.choices[0].message.content,
+                "model_used": "mock/local-simulated"
+            }
+
+        # Choose provider to try based on availability and retry count
+        try_mistral = False
+        if has_mistral:
+            if not has_groq or retry_count >= 2:
+                try_mistral = True
+
+        if try_mistral:
+            model = "mistral-large-latest" if retry_count < 3 else "open-mixtral-8x22b"
+            logger.info(f"Attempting generation with mistral model: {model}")
+            try:
+                import requests
+                headers = {
+                    "Authorization": f"Bearer {self.clients['mistral']}",
+                    "Content-Type": "application/json"
+                }
+                payload = {
+                    "model": model,
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": str(data)}
+                    ],
+                    "temperature": 0.7
+                }
+                response = requests.post(
+                    "https://api.mistral.ai/v1/chat/completions",
+                    json=payload,
+                    headers=headers,
+                    timeout=30
+                )
+                if response.status_code == 200:
+                    res_json = response.json()
+                    content = res_json["choices"][0]["message"]["content"]
+                    return {
+                        "success": True,
+                        "content": content,
+                        "model_used": f"mistral/{model}"
+                    }
+                else:
+                    logger.warning(f"Mistral model {model} failed: {response.text}")
+                    return self.generate_analysis(data, system_prompt, retry_count + 1)
+            except Exception as e:
+                logger.warning(f"Mistral connection error: {str(e)}")
+                return self.generate_analysis(data, system_prompt, retry_count + 1)
         else:
-            tier = ModelTier.FALLBACK
+            # Use Groq client
+            if retry_count == 0:
+                tier = ModelTier.PRIMARY
+            elif retry_count == 1:
+                tier = ModelTier.SECONDARY
+            elif retry_count == 2:
+                tier = ModelTier.TERTIARY
+            else:
+                tier = ModelTier.FALLBACK
+                
+            model_config = self.MODEL_CONFIG[tier]
+            model = model_config["model"]
+            logger.info(f"Attempting generation with groq model: {model}")
             
-        model_config = self.MODEL_CONFIG[tier]
-        provider = model_config["provider"]
-        model = model_config["model"]
-        
-        # Check if we have a client for this provider
-        if provider not in self.clients:
-            logger.error(f"No client available for provider: {provider}")
-            return self.generate_analysis(data, system_prompt, retry_count + 1)
-            
-        try:
-            client = self.clients[provider]
-            logger.info(f"Attempting generation with {provider} model: {model}")
-            
-            if provider == "groq":
+            try:
+                client = self.clients["groq"]
                 completion = client.chat.completions.create(
                     model=model,
                     messages=[
@@ -215,23 +300,17 @@ class ModelManager:
                     temperature=model_config["temperature"],
                     max_tokens=model_config["max_tokens"]
                 )
-                
                 return {
                     "success": True,
                     "content": completion.choices[0].message.content,
-                    "model_used": f"{provider}/{model}"
+                    "model_used": f"groq/{model}"
                 }
+            except Exception as e:
+                error_message = str(e).lower()
+                logger.warning(f"Groq model {model} failed: {error_message}")
                 
-        except Exception as e:
-            error_message = str(e).lower()
-            logger.warning(f"Model {model} failed: {error_message}")
-            
-            # Check for rate limit errors
-            if "rate limit" in error_message or "quota" in error_message:
-                # Wait briefly before retrying with a different model
-                time.sleep(2)
-            
-            # Try next model in hierarchy
-            return self.generate_analysis(data, system_prompt, retry_count + 1)
-            
-        return {"success": False, "error": "Analysis failed with all available models"}
+                # Check for rate limit errors
+                if "rate limit" in error_message or "quota" in error_message:
+                    time.sleep(2)
+                
+                return self.generate_analysis(data, system_prompt, retry_count + 1)

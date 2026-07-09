@@ -13,7 +13,21 @@ class SessionManager:
             # Try to restore session from persistent storage
             SessionManager._restore_from_storage()
             
-        if 'auth_service' not in st.session_state:
+        # Recreate auth_service if it was previously initialized in SQLite mode but credentials are now set
+        recreate_auth = False
+        if 'auth_service' in st.session_state:
+            current_service = st.session_state.auth_service
+            if getattr(current_service, 'db_mode', 'sqlite') == 'sqlite':
+                try:
+                    # Check if secrets now contain valid Supabase settings
+                    url = st.secrets.get("SUPABASE_URL")
+                    key = st.secrets.get("SUPABASE_KEY")
+                    if url and key and "your-supabase" not in url and "your-supabase" not in key:
+                        recreate_auth = True
+                except Exception:
+                    pass
+
+        if 'auth_service' not in st.session_state or recreate_auth:
             from auth.auth_service import AuthService
             st.session_state.auth_service = AuthService()
             

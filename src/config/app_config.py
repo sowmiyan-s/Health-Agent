@@ -1,6 +1,6 @@
 APP_NAME = "HIA"
 APP_DESCRIPTION = "Your Personal Health Insights Agent"
-APP_ICON = "🩺"
+APP_ICON = ""
 APP_TAGLINE = "Discover a Healthier You with AI"
 
 # App settings

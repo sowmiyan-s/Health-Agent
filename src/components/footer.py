@@ -5,7 +5,7 @@ import time
 
 def get_github_stars():
     try:
-        response = requests.get("https://api.github.com/repos/ridhupriya/Health-Agent")
+        response = requests.get("https://api.github.com/repos/ridhupriyaa12/Health-Agent")
         if response.status_code == 200:
             return response.json()["stargazers_count"]
         return None
@@ -59,7 +59,7 @@ def show_footer(in_sidebar=False):
                     background: rgba(100, 181, 246, 0.05);
                     transition: all 0.2s ease;
                 ">
-                    <a href='https://github.com/ridhupriya/Health-Agent' 
+                    <a href='https://github.com/ridhupriyaa12/Health-Agent' 
                        target='_blank' 
                        style='
                            color: #64B5F6;
@@ -87,7 +87,7 @@ def show_footer(in_sidebar=False):
                     gap: 4px;
                     transition: all 0.2s ease;
                 ">
-                    <a href='https://github.com/ridhupriya' 
+                    <a href='https://github.com/ridhupriyaa12' 
                        target='_blank' 
                        style='
                            color: #1976D2;
@@ -100,7 +100,7 @@ def show_footer(in_sidebar=False):
                        '
                        onmouseover="this.style.color='{PRIMARY_COLOR}'; this.style.textDecoration='underline'"
                        onmouseout="this.style.color='#1976D2'; this.style.textDecoration='none'">
-Created by ridhupriya
+Created by ridhupriyaa12
                     </a>
                 </span>
             </p>

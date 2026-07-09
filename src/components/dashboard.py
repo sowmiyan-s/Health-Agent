@@ -17,40 +17,92 @@ def parse_biomarkers(report_text):
     # Target configurations: Regexes, reference range (low/high), units
     patterns = {
         "Hemoglobin": {
-            "patterns": [r"hemoglobin\s*:\s*(\d+\.?\d*)", r"hb\s*:\s*(\d+\.?\d*)"],
+            "patterns": [
+                r"\bhemoglobin\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)", 
+                r"\bhb\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)",
+                r"\bhgb\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)"
+            ],
             "low": 12.0, "high": 15.5, "unit": "g/dL"
         },
         "White Blood Cells": {
-            "patterns": [r"white blood cells\s*:\s*(\d+\.?\d*)", r"wbc\s*:\s*(\d+\.?\d*)"],
+            "patterns": [
+                r"\bwhite blood cells?\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)", 
+                r"\bwbc\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)",
+                r"\bleukocytes?\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)"
+            ],
             "low": 4000.0, "high": 11000.0, "unit": "/µL"
         },
         "Red Blood Cells": {
-            "patterns": [r"red blood cells\s*:\s*(\d+\.?\d*)", r"rbc\s*:\s*(\d+\.?\d*)"],
+            "patterns": [
+                r"\bred blood cells?\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)", 
+                r"\brbc\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)",
+                r"\berythrocytes?\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)"
+            ],
             "low": 4.0, "high": 5.2, "unit": "M/µL"
         },
         "Platelets": {
-            "patterns": [r"platelets\s*:\s*(\d+\.?\d*)", r"plt\s*:\s*(\d+\.?\d*)"],
+            "patterns": [
+                r"\bplatelets?\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)", 
+                r"\bplt\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)",
+                r"\bthrombocytes?\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)"
+            ],
             "low": 150000.0, "high": 450000.0, "unit": "/µL"
         },
         "Glucose (Fasting)": {
-            "patterns": [r"glucose\s*(?:\(fasting\))?\s*:\s*(\d+\.?\d*)", r"fasting glucose\s*:\s*(\d+\.?\d*)"],
+            "patterns": [
+                r"\bglucose\s*(?:\(fasting\))?\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)", 
+                r"\bfasting glucose\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)",
+                r"\bfasting blood sugar\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)",
+                r"\bfbs\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)"
+            ],
             "low": 70.0, "high": 100.0, "unit": "mg/dL"
         },
         "Creatinine": {
-            "patterns": [r"creatinine\s*:\s*(\d+\.?\d*)"],
+            "patterns": [
+                r"\bcreatinine\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)",
+                r"\bcreat\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)"
+            ],
             "low": 0.6, "high": 1.2, "unit": "mg/dL"
         },
         "Total Cholesterol": {
-            "patterns": [r"total cholesterol\s*:\s*(\d+\.?\d*)", r"cholesterol\s*:\s*(\d+\.?\d*)"],
+            "patterns": [
+                r"\btotal cholesterol\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)", 
+                r"\bcholesterol\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)",
+                r"\bchol\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)"
+            ],
             "low": 120.0, "high": 200.0, "unit": "mg/dL"
         },
         "HDL Cholesterol": {
-            "patterns": [r"hdl cholesterol\s*:\s*(\d+\.?\d*)", r"hdl\s*:\s*(\d+\.?\d*)"],
+            "patterns": [
+                r"\bhdl cholesterol\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)", 
+                r"\bhdl\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)",
+                r"\bhdl-c\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)"
+            ],
             "low": 40.0, "high": 60.0, "unit": "mg/dL"
         },
         "LDL Cholesterol": {
-            "patterns": [r"ldl cholesterol\s*:\s*(\d+\.?\d*)", r"ldl\s*:\s*(\d+\.?\d*)"],
+            "patterns": [
+                r"\bldl cholesterol\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)", 
+                r"\bldl\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)",
+                r"\bldl-c\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)"
+            ],
             "low": 50.0, "high": 100.0, "unit": "mg/dL"
+        },
+        "ALT (SGPT)": {
+            "patterns": [
+                r"\balt\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)",
+                r"\bsgpt\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)",
+                r"\balanine aminotransferase\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)"
+            ],
+            "low": 7.0, "high": 56.0, "unit": "U/L"
+        },
+        "AST (SGOT)": {
+            "patterns": [
+                r"\bast\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)",
+                r"\bsgot\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)",
+                r"\baspartate aminotransferase\b\s*(?:[:\-]?\s*|\s)(\d+\.?\d*)"
+            ],
+            "low": 10.0, "high": 40.0, "unit": "U/L"
         }
     }
     

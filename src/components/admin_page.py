@@ -2,7 +2,7 @@ import streamlit as st
 from services.db_service import get_config_db, set_config_db
 
 def show_admin_page():
-    st.title("⚙️ Admin Configuration Panel")
+    st.title("Admin Configuration Panel")
     st.write("Configure API keys and connections for the Health Insights Agent.")
 
     # Initialize admin session states
@@ -14,7 +14,10 @@ def show_admin_page():
             admin_pwd = st.text_input("Enter Admin Password", type="password")
             submit = st.form_submit_button("Verify", use_container_width=True, type="primary")
             if submit:
-                if admin_pwd == "fry65":
+                # Retrieve from environment or secrets, fallback to fry65 if not set
+                import os
+                secret_password = os.environ.get("ADMIN_PASSWORD") or st.secrets.get("ADMIN_PASSWORD", "fry65")
+                if admin_pwd == secret_password:
                     st.session_state.admin_authenticated = True
                     st.success("Authenticated successfully!")
                     st.rerun()
@@ -26,7 +29,7 @@ def show_admin_page():
         current_supabase_url = get_config_db("SUPABASE_URL", "")
         current_supabase_key = get_config_db("SUPABASE_KEY", "")
 
-        st.info("💡 Pro Tip: Leave Supabase credentials empty to run exclusively on the local SQLite database.")
+        st.info("Pro Tip: Leave Supabase credentials empty to run exclusively on the local SQLite database.")
 
         with st.form("config_form"):
             groq_key = st.text_input(
@@ -72,6 +75,6 @@ def show_admin_page():
                 st.rerun()
 
     # Back button to close admin panel
-    if st.button("⬅️ Back to Main Screen", use_container_width=True):
+    if st.button("Back to Main Screen", use_container_width=True):
         st.session_state.show_admin = False
         st.rerun()

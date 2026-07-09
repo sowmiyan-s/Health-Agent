@@ -5,6 +5,10 @@ import time
 import re
 import uuid
 import sqlite3
+import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Import SQLite database operations
 from services.db_service import (
@@ -25,22 +29,30 @@ class AuthService:
         # Determine database mode
         self.db_mode = "sqlite"
         
-        # Check database config first
+        # Load from config, environment, or Streamlit secrets, ignoring placeholders
         url = get_config_db("SUPABASE_URL")
         key = get_config_db("SUPABASE_KEY")
         
+        def clean_val(v):
+            if v and isinstance(v, str) and ("your-" in v or v.strip() == ""):
+                return None
+            return v
+            
+        url = clean_val(url) or clean_val(os.environ.get("SUPABASE_URL"))
+        key = clean_val(key) or clean_val(os.environ.get("SUPABASE_KEY"))
+        
         if not url:
             try:
-                url = st.secrets.get("SUPABASE_URL")
+                url = clean_val(st.secrets.get("SUPABASE_URL"))
             except Exception:
                 pass
         if not key:
             try:
-                key = st.secrets.get("SUPABASE_KEY")
+                key = clean_val(st.secrets.get("SUPABASE_KEY"))
             except Exception:
                 pass
                 
-        if url and key and "your-supabase" not in url and "your-supabase" not in key:
+        if url and key:
             self.db_mode = "supabase"
             
         self.is_mock = (self.db_mode == "sqlite") # Keep compatibility
@@ -155,8 +167,11 @@ class AuthService:
                     'created_at': datetime.now().isoformat()
                 }
                 
-                # Insert user data into users table
-                self.supabase.table('users').insert(user_data).execute()
+                # Insert user data into users table (optional fallback, database trigger handles this via SECURITY DEFINER)
+                try:
+                    self.supabase.table('users').insert(user_data).execute()
+                except Exception as insert_err:
+                    logger.info(f"Database insert handled by trigger or RLS: {str(insert_err)}")
                 
                 # Check if session is established automatically (e.g. email confirmation disabled)
                 session = getattr(auth_response, 'session', None)

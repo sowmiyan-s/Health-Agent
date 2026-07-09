@@ -49,9 +49,18 @@ def show_login_page():
             st.session_state['form_type'] = 'signup' if current_form == 'login' else 'login'
             st.rerun()
 
-        if st.button("⚙️ System Admin Panel", use_container_width=True, type="secondary"):
-            st.session_state.show_admin = True
-            st.rerun()
+        # Stealth admin access check on Login page
+        show_admin_btn = False
+        try:
+            if st.query_params.get("admin") == "true":
+                show_admin_btn = True
+        except Exception:
+            pass
+            
+        if show_admin_btn:
+            if st.button("System Admin Panel", use_container_width=True, type="secondary"):
+                st.session_state.show_admin = True
+                st.rerun()
 
 def show_login_form():
     with st.form("login_form"):

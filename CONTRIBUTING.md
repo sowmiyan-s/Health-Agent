@@ -31,7 +31,7 @@ Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md). We aim to fost
 
 1. **Fork and clone the repository**:
    ```bash
-   git clone https://github.com/ridhupriya/Health-Agent.git
+   git clone https://github.com/ridhupriyaa12/Health-Agent.git
    cd Health-Agent
    ```
 

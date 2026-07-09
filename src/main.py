@@ -11,7 +11,7 @@ from components.admin_page import show_admin_page
 # Must be the first Streamlit command
 st.set_page_config(
     page_title="HIA - Health Insights Agent",
-    page_icon="🩺",
+    page_icon=None,
     layout="wide"
 )
 
@@ -112,7 +112,7 @@ def show_welcome_screen():
     
     col1, col2, col3 = st.columns([2, 3, 2])
     with col2:
-        if st.button("➕ Create New Analysis Session", use_container_width=True, type="primary"):
+        if st.button("Create New Analysis Session", use_container_width=True, type="primary"):
             success, session = SessionManager.create_chat_session()
             if success:
                 st.session_state.current_session = session
@@ -121,14 +121,21 @@ def show_welcome_screen():
                 st.error("Failed to create session")
 
 def show_chat_history():
+    import re
     success, messages = st.session_state.auth_service.get_session_messages(
         st.session_state.current_session['id']
     )
     
     if success:
-        for msg in messages:
+        # Find the last assistant message index
+        last_assistant_idx = -1
+        for idx, msg in enumerate(messages):
+            if msg['role'] == 'assistant':
+                last_assistant_idx = idx
+                
+        for idx, msg in enumerate(messages):
             role = msg['role']
-            avatar = "👤" if role == 'user' else "🩺"
+            avatar = None
             
             if role == 'user' and "**Report Content**:" in msg['content']:
                 # Show only patient summary, and put raw report inside an expander
@@ -144,6 +151,36 @@ def show_chat_history():
             else:
                 with st.chat_message(role, avatar=avatar):
                     st.markdown(msg['content'])
+                    
+                    # If this is the last assistant message (the report), show the download button
+                    if idx == last_assistant_idx:
+                        patient_name = "Valued Patient"
+                        age = "Unknown"
+                        gender = "Unknown"
+                        
+                        # Find patient details from user message
+                        for u_msg in messages:
+                            if u_msg['role'] == 'user' and "**Patient**:" in u_msg['content']:
+                                match = re.search(r"Patient\*\*:\s*(.*?)\s*\(Age:\s*(.*?),\s*Gender:\s*(.*?)\)", u_msg['content'])
+                                if match:
+                                    patient_name = match.group(1).strip()
+                                    age = match.group(2).strip()
+                                    gender = match.group(3).strip()
+                                    break
+                                    
+                        try:
+                            from utils.pdf_generator import generate_pdf_report
+                            pdf_bytes = generate_pdf_report(patient_name, age, gender, msg['content'])
+                            st.markdown("<div style='margin-top: 0.8rem;'></div>", unsafe_allow_html=True)
+                            st.download_button(
+                                label="Export Diagnostic Report as PDF",
+                                data=pdf_bytes,
+                                file_name=f"HIA_Analysis_{patient_name.replace(' ', '_')}.pdf",
+                                mime="application/pdf",
+                                key=f"dl_pdf_{idx}"
+                            )
+                        except Exception as e:
+                            st.error(f"Failed to generate PDF download: {str(e)}")
 
 def get_report_content_from_history():
     if not st.session_state.get('current_session'):
@@ -165,24 +202,30 @@ def show_user_greeting():
         display_name = st.session_state.user.get('name') or st.session_state.user.get('email', '')
         st.markdown(f"""
             <div style='text-align: right; padding: 1rem; color: #64B5F6; font-size: 1.1em;'>
-                👋 Hi, {display_name}
+                Hi, {display_name}
             </div>
         """, unsafe_allow_html=True)
 
 def show_demo_mode_banner():
-    is_sqlite = False
+    is_sqlite = True
     if 'auth_service' in st.session_state:
         is_sqlite = (getattr(st.session_state.auth_service, 'db_mode', 'sqlite') == 'sqlite')
         
-    from agents.model_manager import get_groq_api_key
-    has_groq = get_groq_api_key() is not None
+    from agents.model_manager import get_groq_api_key, get_mistral_api_key
+    has_ai_key = (get_groq_api_key() is not None) or (get_mistral_api_key() is not None)
     
-    if is_sqlite and not has_groq:
-        st.warning("⚠️ **Running in Local Demo Mode**: Using local SQLite database (no Supabase) and local mock AI responses (no Groq key). Click **⚙️ Admin Panel** in the sidebar to configure settings.")
-    elif is_sqlite and has_groq:
-        st.info("ℹ️ **Running in Local SQL Database Mode**: Using local SQLite database for accounts/chats and real Groq AI for report analysis.")
-    elif not is_sqlite and not has_groq:
-        st.warning("⚠️ **Running in Cloud Demo Mode**: Connected to Supabase cloud, but using local mock AI responses (no Groq key). Configure Groq key in secrets.toml or Admin Panel.")
+    # If fully configured, show nothing
+    if not is_sqlite and has_ai_key:
+        return
+        
+    warnings = []
+    if is_sqlite:
+        warnings.append("Supabase URL not set (running on local SQLite)")
+    if not has_ai_key:
+        warnings.append("AI API Key not set (using mock simulated responses)")
+        
+    if warnings:
+        st.warning("⚠️ **Configuration Notice**: " + " | ".join(warnings))
 
 def main():
     # Initialize SQLite database schema
@@ -212,7 +255,7 @@ def main():
 
     # Main chat area
     if st.session_state.get('current_session'):
-        st.title(f"📊 {st.session_state.current_session['title']}")
+        st.title(st.session_state.current_session['title'])
         
         # Extract and show biomarker dashboard if report is present in session history
         report_content = get_report_content_from_history()

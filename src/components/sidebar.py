@@ -5,9 +5,9 @@ from config.app_config import ANALYSIS_DAILY_LIMIT
 
 def show_sidebar():
     with st.sidebar:
-        st.title("💬 Chat Sessions")
+        st.title("Chat Sessions")
         
-        if st.button("+ New Analysis Session", use_container_width=True):
+        if st.button("New Analysis Session", use_container_width=True):
             st.session_state.show_admin = False
             if st.session_state.user and 'id' in st.session_state.user:
                 success, session = SessionManager.create_chat_session()
@@ -66,7 +66,7 @@ def show_sidebar():
             
         if show_admin_btn:
             st.markdown("---")
-            if st.button("⚙️ Admin Panel", use_container_width=True):
+            if st.button("Admin Panel", use_container_width=True):
                 st.session_state.show_admin = True
                 st.session_state.current_session = None
                 st.rerun()
@@ -113,13 +113,13 @@ def render_session_item(session):
         title_col, delete_col = st.columns([4, 1])
         
         with title_col:
-            if st.button(f"📝 {session['title']}", key=f"session_{session_id}", use_container_width=True):
+            if st.button(session['title'], key=f"session_{session_id}", use_container_width=True):
                 st.session_state.show_admin = False
                 st.session_state.current_session = session
                 st.rerun()
         
         with delete_col:
-            if st.button("🗑️", key=f"delete_{session_id}", help="Delete this session"):
+            if st.button("Delete", key=f"delete_{session_id}", help="Delete this session"):
                 if st.session_state.delete_confirmation == session_id:
                     st.session_state.delete_confirmation = None
                 else:
