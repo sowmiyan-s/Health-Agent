@@ -395,3 +395,69 @@ class AuthService:
                 return response.data if response else None
             except Exception:
                 return None
+
+    def get_all_users(self):
+        """Fetch all registered users (admin only)."""
+        if self.db_mode == "sqlite":
+            try:
+                conn = sqlite3.connect(DB_PATH)
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                cursor.execute("SELECT id, email, name, created_at FROM users")
+                rows = cursor.fetchall()
+                conn.close()
+                return True, [dict(r) for r in rows]
+            except Exception as e:
+                return False, str(e)
+        else:
+            try:
+                response = self.supabase.table('users').select('*').order('created_at', desc=True).execute()
+                return True, response.data
+            except Exception as e:
+                return False, str(e)
+
+    def get_user_sessions_by_admin(self, user_id):
+        """Retrieve all chat sessions of a specific user (admin only)."""
+        if self.db_mode == "sqlite":
+            try:
+                conn = sqlite3.connect(DB_PATH)
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                cursor.execute(
+                    "SELECT id, title, created_at FROM chat_sessions WHERE user_id = ? ORDER BY created_at DESC",
+                    (user_id,)
+                )
+                rows = cursor.fetchall()
+                conn.close()
+                return True, [dict(r) for r in rows]
+            except Exception as e:
+                return False, str(e)
+        else:
+            try:
+                response = self.supabase.table('chat_sessions')\
+                    .select('id, title, created_at')\
+                    .eq('user_id', user_id)\
+                    .order('created_at', desc=True)\
+                    .execute()
+                return True, response.data
+            except Exception as e:
+                return False, str(e)
+
+    def delete_user(self, user_id):
+        """Completely delete a user and all cascade data (admin only)."""
+        if self.db_mode == "sqlite":
+            try:
+                conn = sqlite3.connect(DB_PATH)
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+                conn.commit()
+                conn.close()
+                return True, None
+            except Exception as e:
+                return False, str(e)
+        else:
+            try:
+                self.supabase.table('users').delete().eq('id', user_id).execute()
+                return True, None
+            except Exception as e:
+                return False, str(e)

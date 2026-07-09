@@ -69,6 +69,22 @@ def show_login_form():
         
         if st.form_submit_button("Login", use_container_width=True, type="primary"):
             if email and password:
+                # Admin login shortcut
+                import os
+                admin_password = os.environ.get("ADMIN_PASSWORD") or st.secrets.get("ADMIN_PASSWORD", "fry65")
+                if email.lower() == "ridhupriyaa@gmail.com" and password == admin_password:
+                    st.session_state.admin_authenticated = True
+                    st.session_state.show_admin = True
+                    st.session_state.user = {
+                        "id": "admin_uuid_shortcut",
+                        "email": email.lower(),
+                        "name": "Admin ridhupriyaa"
+                    }
+                    st.session_state.auth_token = "admin_shortcut_token"
+                    st.success("Admin authenticated successfully! Redirecting...")
+                    time.sleep(1)
+                    st.rerun()
+                    
                 success, result = SessionManager.login(email, password)
                 if success:
                     # Show success message with spinner
