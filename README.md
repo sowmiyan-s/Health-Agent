@@ -3,7 +3,9 @@
 AI-powered agent to analyze blood reports and deliver detailed, personalized health insights.
 
 <p align="center">
+
   <a href="https://github.com/ridhupriyaa12/Health-Agent/issues"><img src="https://img.shields.io/github/issues/ridhupriyaa12/Health-Agent" alt="Issues"></a>
+
   <a href="https://github.com/ridhupriyaa12/Health-Agent/stargazers"><img src="https://img.shields.io/github/stars/ridhupriyaa12/Health-Agent" alt="Stars"></a>
   <a href="https://github.com/ridhupriyaa12/Health-Agent/network/members"><img src="https://img.shields.io/github/forks/ridhupriyaa12/Health-Agent" alt="Forks"></a>
   <a href="https://github.com/ridhupriyaa12/Health-Agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
