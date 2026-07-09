@@ -1,36 +1,26 @@
+from agents.analysis_agent import AnalysisAgent, get_default_user_state
 import streamlit as st
-from agents.analysis_agent import AnalysisAgent
 
-def init_analysis_state():
-    """Initialize analysis-related session state variables."""
-    if 'analysis_agent' not in st.session_state:
-        st.session_state.analysis_agent = AnalysisAgent()
+# Shared instance of AnalysisAgent
+_analysis_agent = AnalysisAgent()
 
-def check_rate_limit():
-    # Ensure analysis agent is initialized
-    init_analysis_state()
-    return st.session_state.analysis_agent.check_rate_limit()
+def check_rate_limit(user_state=None):
+    """Check if the user has reached their daily analysis limit."""
+    if user_state is None:
+        user_state = st.session_state.get('user_state') or get_default_user_state()
+    return _analysis_agent.check_rate_limit(user_state)
 
-def generate_analysis(data, system_prompt, check_only=False, session_id=None):
-    """Generate analysis if within rate limits."""
-    # Ensure analysis agent is initialized
-    init_analysis_state()
-    
-    # For check_only, we just need to check rate limits
+def generate_analysis(data, system_prompt, user_state=None, check_only=False):
+    """Generate medical report analysis if within rate limits."""
+    if user_state is None:
+        user_state = st.session_state.get('user_state') or get_default_user_state()
+        
     if check_only:
-        return st.session_state.analysis_agent.check_rate_limit()
+        return _analysis_agent.check_rate_limit(user_state)
     
-    # Get chat history if needed
-    # Don't pass chat_history for now as it's causing issues
-    # chat_history = None
-    # if session_id and 'auth_service' in st.session_state:
-    #     success, messages = st.session_state.auth_service.get_session_messages(session_id)
-    #     if success:
-    #         chat_history = messages
-    
-    # Call analyze_report without the chat_history parameter
-    return st.session_state.analysis_agent.analyze_report(
+    return _analysis_agent.analyze_report(
         data=data,
         system_prompt=system_prompt,
+        user_state=user_state,
         check_only=False
     )

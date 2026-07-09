@@ -1,6 +1,11 @@
-streamlit>=1.42.0
-st-supabase-connection>=2.0.1
+fastapi>=0.100.0
+uvicorn>=0.22.0
+python-multipart>=0.0.6
 groq>=0.18.0
 pdfplumber>=0.11.5
 filetype>=1.2.0
-gotrue
+streamlit>=1.25.0
+supabase>=1.0.0
+st-supabase-connection>=0.1.0
+plotly>=5.15.0
+python-dotenv>=1.0.0

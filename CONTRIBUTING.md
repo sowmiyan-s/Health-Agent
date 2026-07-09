@@ -31,8 +31,8 @@ Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md). We aim to fost
 
 1. **Fork and clone the repository**:
    ```bash
-   git clone https://github.com/harshhh28/hia.git
-   cd hia
+   git clone https://github.com/ridhupriya/Health-Agent.git
+   cd Health-Agent
    ```
 
 2. **Install dependencies**:
@@ -49,7 +49,7 @@ Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md). We aim to fost
    ```
 
 4. **Set up database**:
-   Execute the SQL script in [public/db/script.sql](public/db/script.sql)
+   Execute the SQL script in [supabase_schema.sql](supabase_schema.sql)
 
 5. **Run the application**:
    ```bash
@@ -152,5 +152,4 @@ Follow the Security Policy (see SECURITY.md)
 
 ---
 
-We appreciate your contributions to making HIA better! If you have questions, feel free to open an issue or contact the maintainers.
-We appreciate your contributions to making HIA better! If you have questions, feel free to open an issue or contact NithuPriyaa.
+We appreciate your contributions to making HIA better! If you have questions, feel free to open an issue or contact ridhupriya.

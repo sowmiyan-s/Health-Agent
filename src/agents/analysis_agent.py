@@ -1,60 +1,63 @@
 from datetime import datetime, timedelta
-import streamlit as st
 from agents.model_manager import ModelManager
+
+def get_default_user_state():
+    """Returns a fresh state dictionary for tracking user analysis limits and history."""
+    return {
+        "analysis_count": 0,
+        "last_analysis": datetime.now(),
+        "analysis_limit": 15,
+        "models_used": {},
+        "knowledge_base": {}
+    }
 
 class AnalysisAgent:
     """
     Agent responsible for managing report analysis, rate limiting,
     and implementing in-context learning from previous analyses.
+    Stateless with respect to Streamlit session state, allowing multi-user backend execution.
     """
     
     def __init__(self):
         self.model_manager = ModelManager()
-        self._init_state()
-        
-    def _init_state(self):
-        """Initialize analysis-related session state variables."""
-        if 'analysis_count' not in st.session_state:
-            st.session_state.analysis_count = 0
-        if 'last_analysis' not in st.session_state:
-            st.session_state.last_analysis = datetime.now()
-        if 'analysis_limit' not in st.session_state:
-            st.session_state.analysis_limit = 15
-        if 'models_used' not in st.session_state:
-            st.session_state.models_used = {}
-        if 'knowledge_base' not in st.session_state:
-            st.session_state.knowledge_base = {}
             
-    def check_rate_limit(self):
-        """Check if user has reached their analysis limit."""
-        # Calculate time until reset
-        time_until_reset = timedelta(days=1) - (datetime.now() - st.session_state.last_analysis)
+    def check_rate_limit(self, user_state):
+        """Check if user has reached their analysis limit based on their state."""
+        last_analysis = user_state.get('last_analysis')
+        if not last_analysis:
+            last_analysis = datetime.now()
+            user_state['last_analysis'] = last_analysis
+            
+        time_until_reset = timedelta(days=1) - (datetime.now() - last_analysis)
         hours, remainder = divmod(time_until_reset.seconds, 3600)
         minutes, _ = divmod(remainder, 60)
         
         # Reset counter after 24 hours
         if time_until_reset.days < 0:
-            st.session_state.analysis_count = 0
-            st.session_state.last_analysis = datetime.now()
+            user_state['analysis_count'] = 0
+            user_state['last_analysis'] = datetime.now()
             return True, None
         
         # Check if limit reached
-        if st.session_state.analysis_count >= st.session_state.analysis_limit:
+        limit = user_state.get('analysis_limit', 15)
+        count = user_state.get('analysis_count', 0)
+        if count >= limit:
             error_msg = f"Daily limit reached. Reset in {hours}h {minutes}m"
             return False, error_msg
         return True, None
 
-    def analyze_report(self, data, system_prompt, check_only=False, chat_history=None):
+    def analyze_report(self, data, system_prompt, user_state, check_only=False, chat_history=None):
         """
         Analyze report data using in-context learning from previous analyses.
         
         Args:
             data: Report data to analyze
             system_prompt: Base system prompt
+            user_state: State dictionary for the current user
             check_only: If True, only check rate limit without generating analysis
             chat_history: Previous messages in the current session (optional)
         """
-        can_analyze, error_msg = self.check_rate_limit()
+        can_analyze, error_msg = self.check_rate_limit(user_state)
         if not can_analyze:
             return {"success": False, "error": error_msg}
         
@@ -64,41 +67,38 @@ class AnalysisAgent:
         # Process data before sending to model
         processed_data = self._preprocess_data(data)
         
-        # Enhance prompt with in-context learning (only if chat_history is provided)
-        enhanced_prompt = self._build_enhanced_prompt(system_prompt, processed_data, chat_history) if chat_history else system_prompt
+        # Enhance prompt with in-context learning
+        enhanced_prompt = self._build_enhanced_prompt(system_prompt, processed_data, user_state, chat_history) if chat_history else system_prompt
         
         # Generate analysis using model manager
         result = self.model_manager.generate_analysis(processed_data, enhanced_prompt)
         
         if result["success"]:
             # Update analytics and learning systems
-            self._update_analytics(result)
-            self._update_knowledge_base(processed_data, result["content"])
+            self._update_analytics(result, user_state)
+            self._update_knowledge_base(processed_data, result["content"], user_state)
         
         return result
     
-    def _update_analytics(self, result):
-        """Update analytics after successful analysis."""
-        st.session_state.analysis_count += 1
-        st.session_state.last_analysis = datetime.now()
+    def _update_analytics(self, result, user_state):
+        """Update analytics in user_state after successful analysis."""
+        user_state['analysis_count'] = user_state.get('analysis_count', 0) + 1
+        user_state['last_analysis'] = datetime.now()
         
         # Track which models are being used
         model_used = result.get("model_used", "unknown")
-        if model_used in st.session_state.models_used:
-            st.session_state.models_used[model_used] += 1
-        else:
-            st.session_state.models_used[model_used] = 1
+        models_used = user_state.setdefault('models_used', {})
+        models_used[model_used] = models_used.get(model_used, 0) + 1
     
-    def _update_knowledge_base(self, data, analysis):
+    def _update_knowledge_base(self, data, analysis, user_state):
         """
-        Update knowledge base with new analysis results for in-context learning.
+        Update knowledge base in user_state with new analysis results for in-context learning.
         Maps key health indicators to analysis patterns.
         """
         if not isinstance(data, dict) or 'report' not in data:
             return
             
         # Extract key health indicators and map them to analysis outcomes
-        # This basic implementation can be expanded with more sophisticated extraction
         report_text = data['report'].lower()
         patient_profile = f"{data.get('age', 'unknown')}-{data.get('gender', 'unknown')}"
         
@@ -108,28 +108,27 @@ class AnalysisAgent:
             "hdl", "ldl", "wbc", "rbc", "platelet", "creatinine"
         ]
         
+        knowledge_base = user_state.setdefault('knowledge_base', {})
+        
         # Store snippets of analysis associated with key health indicators
         for indicator in key_indicators:
             if indicator in report_text:
                 # Find any mentions of this indicator in the analysis
                 if indicator in analysis.lower():
                     # Store this learning in knowledge base
-                    if indicator not in st.session_state.knowledge_base:
-                        st.session_state.knowledge_base[indicator] = {}
-                    
-                    if patient_profile not in st.session_state.knowledge_base[indicator]:
-                        st.session_state.knowledge_base[indicator][patient_profile] = []
+                    profiles = knowledge_base.setdefault(indicator, {})
+                    insights = profiles.setdefault(patient_profile, [])
                     
                     # Extract the relevant section from analysis (simple approach)
                     lines = analysis.split('\n')
                     relevant_lines = [l for l in lines if indicator in l.lower()]
                     if relevant_lines:
                         # Limit knowledge base size to prevent overflow
-                        if len(st.session_state.knowledge_base[indicator][patient_profile]) >= 3:
-                            st.session_state.knowledge_base[indicator][patient_profile].pop(0)
-                        st.session_state.knowledge_base[indicator][patient_profile].append(relevant_lines[0])
+                        if len(insights) >= 3:
+                            insights.pop(0)
+                        insights.append(relevant_lines[0])
     
-    def _build_enhanced_prompt(self, system_prompt, data, chat_history):
+    def _build_enhanced_prompt(self, system_prompt, data, user_state, chat_history):
         """
         Build an enhanced prompt using in-context learning from:
         1. Knowledge base of previous analyses
@@ -139,7 +138,7 @@ class AnalysisAgent:
         
         # Add in-context learning from knowledge base
         if isinstance(data, dict) and 'report' in data:
-            kb_context = self._get_knowledge_base_context(data)
+            kb_context = self._get_knowledge_base_context(data, user_state)
             if kb_context:
                 enhanced_prompt += "\n\n## Relevant Learning From Previous Analyses\n" + kb_context
         
@@ -151,9 +150,10 @@ class AnalysisAgent:
         
         return enhanced_prompt
     
-    def _get_knowledge_base_context(self, data):
-        """Extract relevant context from knowledge base."""
-        if 'knowledge_base' not in st.session_state or not st.session_state.knowledge_base:
+    def _get_knowledge_base_context(self, data, user_state):
+        """Extract relevant context from knowledge base in user_state."""
+        knowledge_base = user_state.get('knowledge_base', {})
+        if not knowledge_base:
             return ""
             
         report_text = data.get('report', '').lower()
@@ -162,7 +162,7 @@ class AnalysisAgent:
         context_items = []
         
         # Find relevant knowledge from previous analyses
-        for indicator, profiles in st.session_state.knowledge_base.items():
+        for indicator, profiles in knowledge_base.items():
             if indicator in report_text:
                 # Get insights from similar patient profiles first
                 if patient_profile in profiles:

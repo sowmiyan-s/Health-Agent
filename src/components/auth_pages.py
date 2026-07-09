@@ -49,6 +49,10 @@ def show_login_page():
             st.session_state['form_type'] = 'signup' if current_form == 'login' else 'login'
             st.rerun()
 
+        if st.button("⚙️ System Admin Panel", use_container_width=True, type="secondary"):
+            st.session_state.show_admin = True
+            st.rerun()
+
 def show_login_form():
     with st.form("login_form"):
         email = st.text_input("Email", key="login_email")
@@ -100,10 +104,16 @@ def show_signup_form():
                 )
                 
                 if success:
-                    st.session_state.authenticated = True
-                    st.session_state.user = response
-                    st.success("Account created successfully! Redirecting...")
-                    time.sleep(1)
-                    st.rerun()
+                    if response == "email_verification_required":
+                        st.info("✉️ Account created! Please check your email for a verification link to activate your account, then log in.")
+                        time.sleep(4)
+                        st.session_state['form_type'] = 'login'
+                        st.rerun()
+                    else:
+                        st.session_state.authenticated = True
+                        st.session_state.user = response
+                        st.success("🎉 Account created successfully! Redirecting...")
+                        time.sleep(1)
+                        st.rerun()
                 else:
                     st.error(f"Sign up failed: {response}")

@@ -49,3 +49,7 @@ htmlcov/
 .coverage.*
 coverage.xml
 *.cover
+
+# Database
+*.db
+hia_database.db

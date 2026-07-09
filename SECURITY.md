@@ -15,7 +15,7 @@ The following table shows which versions of HIA are currently supported with sec
 
 To report a security vulnerability:
 
-1. Please email the project maintainer (NithuPriyaa) or open a private issue with details.
+1. Please email the project maintainer (ridhupriya) or open a private issue with details.
 2. Provide as much detail as possible, including steps to reproduce and potential impact.
 3. You can expect an initial response within 72 hours. If the vulnerability is confirmed, we will work to release a fix as soon as possible and notify you when it is available.
 4. If the vulnerability is declined, you will receive an explanation.

@@ -83,10 +83,15 @@ def handle_form_submission(patient_name, age, gender, pdf_contents):
         return
 
     with st.spinner("Analyzing report..."):
-        # Save user message and proceed with analysis
+        # Save user message with report details for extraction and display
+        report_summary = (
+            f"📋 **Patient**: {patient_name} (Age: {age}, Gender: {gender})\n\n"
+            f"**Report Content**:\n{pdf_contents}"
+        )
         st.session_state.auth_service.save_chat_message(
             st.session_state.current_session['id'],
-            f"Analyzing report for patient: {patient_name}"
+            report_summary,
+            role='user'
         )
         
         # Generate analysis

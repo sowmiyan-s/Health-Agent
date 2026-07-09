@@ -8,6 +8,7 @@ def show_sidebar():
         st.title("💬 Chat Sessions")
         
         if st.button("+ New Analysis Session", use_container_width=True):
+            st.session_state.show_admin = False
             if st.session_state.user and 'id' in st.session_state.user:
                 success, session = SessionManager.create_chat_session()
                 if success:
@@ -21,10 +22,11 @@ def show_sidebar():
                 st.rerun()
 
         # Add analysis counter
-        if 'analysis_count' not in st.session_state:
-            st.session_state.analysis_count = 0
+        analysis_count = 0
+        if 'user_state' in st.session_state:
+            analysis_count = st.session_state.user_state.get('analysis_count', 0)
         
-        remaining = ANALYSIS_DAILY_LIMIT - st.session_state.analysis_count
+        remaining = ANALYSIS_DAILY_LIMIT - analysis_count
         st.markdown(
             f"""
             <div style='
@@ -51,9 +53,28 @@ def show_sidebar():
         st.markdown("---")
         show_session_list()
         
+        # Stealth Admin Panel access check
+        show_admin_btn = False
+        try:
+            if st.query_params.get("admin") == "true":
+                show_admin_btn = True
+        except Exception:
+            pass
+            
+        if st.session_state.user and st.session_state.user.get('email', '').startswith('ridhupriya'):
+            show_admin_btn = True
+            
+        if show_admin_btn:
+            st.markdown("---")
+            if st.button("⚙️ Admin Panel", use_container_width=True):
+                st.session_state.show_admin = True
+                st.session_state.current_session = None
+                st.rerun()
+            
         # Logout button
         st.markdown("---")
         if st.button("Logout", use_container_width=True):
+            st.session_state.show_admin = False
             SessionManager.logout()
             st.rerun()
         
@@ -93,6 +114,7 @@ def render_session_item(session):
         
         with title_col:
             if st.button(f"📝 {session['title']}", key=f"session_{session_id}", use_container_width=True):
+                st.session_state.show_admin = False
                 st.session_state.current_session = session
                 st.rerun()
         

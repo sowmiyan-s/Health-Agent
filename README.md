@@ -4,15 +4,15 @@ AI-powered agent to analyze blood reports and deliver detailed, personalized hea
 
 <p align="center">
 
-  <a href="https://github.com/ridhupriyaa12/Health-Agent/issues"><img src="https://img.shields.io/github/issues/ridhupriyaa12/Health-Agent" alt="Issues"></a>
+  <a href="https://github.com/ridhupriya/Health-Agent/issues"><img src="https://img.shields.io/github/issues/ridhupriya/Health-Agent" alt="Issues"></a>
 
-  <a href="https://github.com/ridhupriyaa12/Health-Agent/stargazers"><img src="https://img.shields.io/github/stars/ridhupriyaa12/Health-Agent" alt="Stars"></a>
-  <a href="https://github.com/ridhupriyaa12/Health-Agent/network/members"><img src="https://img.shields.io/github/forks/ridhupriyaa12/Health-Agent" alt="Forks"></a>
-  <a href="https://github.com/ridhupriyaa12/Health-Agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
+  <a href="https://github.com/ridhupriya/Health-Agent/stargazers"><img src="https://img.shields.io/github/stars/ridhupriya/Health-Agent" alt="Stars"></a>
+  <a href="https://github.com/ridhupriya/Health-Agent/network/members"><img src="https://img.shields.io/github/forks/ridhupriya/Health-Agent" alt="Forks"></a>
+  <a href="https://github.com/ridhupriya/Health-Agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/ridhupriyaa12/Health-Agent"><img src="https://raw.githubusercontent.com/ridhupriyaa12/Health-Agent/main/public/HIA_demo.gif" alt="Usage Demo"></a>
+  <a href="https://github.com/ridhupriya/Health-Agent"><img src="https://raw.githubusercontent.com/ridhupriya/Health-Agent/main/public/HIA_demo.gif" alt="Usage Demo"></a>
 </p>
 
 ---
@@ -60,7 +60,7 @@ AI-powered agent to analyze blood reports and deliver detailed, personalized hea
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/ridhupriyaa12/Health-Agent.git
+git clone https://github.com/ridhupriya/Health-Agent.git
 cd Health-Agent
 ```
 
@@ -79,14 +79,14 @@ GROQ_API_KEY = "your-groq-api-key"
 ```
 
 4. Set up Supabase database schema:
-   Use the SQL script provided at [`public/db/script.sql`](https://github.com/ridhupriyaa12/Health-Agent/blob/main/public/db/script.sql).
+   Use the SQL script provided at [`supabase_schema.sql`](https://github.com/ridhupriya/Health-Agent/blob/main/supabase_schema.sql).
 
 > Tip: You can turn off email confirmation in Supabase settings under Signup → Email.
 
 5. Run the application:
 
 ```bash
-streamlit run src/main.py
+streamlit run app.py
 ```
 
 ---
@@ -124,10 +124,10 @@ Health-Agent/
 
 ## 📄 License
 
-This project is licensed under the MIT License. See [LICENSE](https://github.com/ridhupriyaa12/Health-Agent/blob/main/LICENSE) for details.
+This project is licensed under the MIT License. See [LICENSE](https://github.com/ridhupriya/Health-Agent/blob/main/LICENSE) for details.
 
 ---
 
 ## 🙋‍♂️ Author
 
-Created by NithuPriyaa
+Created by ridhupriya

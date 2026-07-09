@@ -16,6 +16,10 @@ class SessionManager:
         if 'auth_service' not in st.session_state:
             from auth.auth_service import AuthService
             st.session_state.auth_service = AuthService()
+            
+        if 'user_state' not in st.session_state:
+            from agents.analysis_agent import get_default_user_state
+            st.session_state.user_state = get_default_user_state()
         
         # Check session timeout
         if 'last_activity' in st.session_state:
