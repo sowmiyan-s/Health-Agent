@@ -204,13 +204,13 @@ class ModelManager:
         if mistral_key:
             self.clients["mistral"] = mistral_key
 
-    def generate_analysis(self, data, system_prompt, retry_count=0):
+    def generate_analysis(self, data, system_prompt, retry_count=0, last_error=None):
         """
         Generate analysis using the best available model with automatic fallback.
         Implements agent-based decision making for model selection.
         """
         if retry_count > 3:
-            return {"success": False, "error": "All models failed after multiple retries"}
+            return {"success": False, "error": f"All models failed after multiple retries. Details: {last_error or 'Unknown error'}"}
 
         has_groq = "groq" in self.clients
         has_mistral = "mistral" in self.clients
@@ -270,10 +270,10 @@ class ModelManager:
                     }
                 else:
                     logger.warning(f"Mistral model {model} failed: {response.text}")
-                    return self.generate_analysis(data, system_prompt, retry_count + 1)
+                    return self.generate_analysis(data, system_prompt, retry_count + 1, last_error=f"Mistral API {response.status_code}: {response.text}")
             except Exception as e:
                 logger.warning(f"Mistral connection error: {str(e)}")
-                return self.generate_analysis(data, system_prompt, retry_count + 1)
+                return self.generate_analysis(data, system_prompt, retry_count + 1, last_error=str(e))
         else:
             # Use Groq client
             if retry_count == 0:
@@ -306,11 +306,11 @@ class ModelManager:
                     "model_used": f"groq/{model}"
                 }
             except Exception as e:
-                error_message = str(e).lower()
+                error_message = str(e)
                 logger.warning(f"Groq model {model} failed: {error_message}")
                 
                 # Check for rate limit errors
-                if "rate limit" in error_message or "quota" in error_message:
+                if "rate limit" in error_message.lower() or "quota" in error_message.lower():
                     time.sleep(2)
                 
-                return self.generate_analysis(data, system_prompt, retry_count + 1)
+                return self.generate_analysis(data, system_prompt, retry_count + 1, last_error=error_message)

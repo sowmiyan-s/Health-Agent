@@ -2,6 +2,8 @@ import streamlit as st
 from services.ai_service import generate_analysis
 from config.prompts import SPECIALIST_PROMPTS
 from utils.pdf_extractor import extract_text_from_pdf
+from utils.image_extractor import extract_text_from_image
+from utils.validators import validate_uploaded_file, validate_report_content
 from config.sample_data import SAMPLE_REPORT
 from config.app_config import MAX_UPLOAD_SIZE_MB
 
@@ -26,32 +28,40 @@ def show_analysis_form():
 def get_report_contents(report_source):
     if report_source == "Upload PDF":
         uploaded_file = st.file_uploader(
-            f"Upload blood report PDF (Max {MAX_UPLOAD_SIZE_MB}MB)", 
-            type=['pdf'],
-            help=f"Maximum file size: {MAX_UPLOAD_SIZE_MB}MB. Only PDF files containing medical reports are supported"
+            f"Upload blood report (Max {MAX_UPLOAD_SIZE_MB}MB)", 
+            type=['pdf', 'png', 'jpg', 'jpeg'],
+            help=f"Maximum file size: {MAX_UPLOAD_SIZE_MB}MB. Supports PDF and Image files (PNG, JPG, JPEG) containing medical reports."
         )
         if uploaded_file:
-            # Check file size before processing
-            file_size_mb = uploaded_file.size / (1024 * 1024)  # Convert to MB
-            if file_size_mb > MAX_UPLOAD_SIZE_MB:
-                st.error(f"File size ({file_size_mb:.1f}MB) exceeds the {MAX_UPLOAD_SIZE_MB}MB limit.")
+            # Validate uploaded file format and size
+            is_valid, error = validate_uploaded_file(uploaded_file)
+            if not is_valid:
+                st.error(error)
                 return None
                 
-            if uploaded_file.type != 'application/pdf':
-                st.error("Please upload a valid PDF file.")
-                return None
+            # Dispatch to correct text extractor based on file mime type
+            if uploaded_file.type == 'application/pdf':
+                extracted_text = extract_text_from_pdf(uploaded_file)
+            else:
+                extracted_text = extract_text_from_image(uploaded_file)
                 
-            pdf_contents = extract_text_from_pdf(uploaded_file)
-            if isinstance(pdf_contents, str) and (
-                pdf_contents.startswith(("File size exceeds", "Invalid file type", "Error validating")) or
-                pdf_contents.startswith("The uploaded file") or
-                "error" in pdf_contents.lower()
+            if isinstance(extracted_text, str) and (
+                extracted_text.startswith(("File size exceeds", "Invalid file type", "Error validating", "Error extracting")) or
+                extracted_text.startswith("The uploaded file") or
+                "error" in extracted_text.lower()
             ):
-                st.error(pdf_contents)
+                st.error(extracted_text)
                 return None
+                
+            # Perform report validation on extracted text content
+            is_valid_content, content_error = validate_report_content(extracted_text)
+            if not is_valid_content:
+                st.error(content_error)
+                return None
+                
             with st.expander("View Extracted Report"):
-                st.text(pdf_contents)
-            return pdf_contents
+                st.text(extracted_text)
+            return extracted_text
     else:
         with st.expander("View Sample Report"):
             st.text(SAMPLE_REPORT)

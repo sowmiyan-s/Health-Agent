@@ -119,7 +119,7 @@ def render_session_item(session):
                 st.rerun()
         
         with delete_col:
-            if st.button("Delete", key=f"delete_{session_id}", help="Delete this session"):
+            if st.button("X", key=f"delete_{session_id}", help="Delete this session"):
                 if st.session_state.delete_confirmation == session_id:
                     st.session_state.delete_confirmation = None
                 else:

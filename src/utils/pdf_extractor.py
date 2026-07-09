@@ -1,13 +1,13 @@
 import pdfplumber
 import streamlit as st
 from config.app_config import MAX_PDF_PAGES
-from utils.validators import validate_pdf_file, validate_pdf_content
+from utils.validators import validate_uploaded_file, validate_report_content
 
 def extract_text_from_pdf(pdf_file):
     """Extract and validate text from PDF file."""
     try:
         # Validate file first
-        is_valid, error = validate_pdf_file(pdf_file)
+        is_valid, error = validate_uploaded_file(pdf_file)
         if not is_valid:
             return error
 
@@ -23,7 +23,7 @@ def extract_text_from_pdf(pdf_file):
                 text += extracted + "\n"
         
         # Validate extracted content
-        is_valid, error = validate_pdf_content(text)
+        is_valid, error = validate_report_content(text)
         if not is_valid:
             return error
             
