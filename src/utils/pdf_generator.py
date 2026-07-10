@@ -35,6 +35,18 @@ def clean_latin1(text):
     replacements = {
         "\u2013": "-",   # en-dash
         "\u2014": "--",  # em-dash
+        "\x96": "-",     # en-dash CP1252
+        "\u0096": "-",   # control character en-dash
+        "\x95": "-",     # bullet CP1252
+        "\u0095": "-",   # control character bullet
+        "\x91": "'",     # left single quote CP1252
+        "\u0091": "'",
+        "\x92": "'",     # right single quote CP1252
+        "\u0092": "'",
+        "\x93": '"',     # left double quote CP1252
+        "\u0093": '"',
+        "\x94": '"',     # right double quote CP1252
+        "\u0094": '"',
         "\u2018": "'",   # left single quote
         "\u2019": "'",   # right single quote
         "\u201c": '"',   # left double quote
@@ -125,22 +137,22 @@ def generate_pdf_report(patient_name, age, gender, report_text):
         if line.startswith('###'):
             pdf.set_font('Helvetica', 'B', 11)
             pdf.set_text_color(78, 140, 255) # Blue headers
-            pdf.cell(0, 8, cleaned_line.replace('###', '').strip(), 0, 1)
+            pdf.multi_cell(190, 6, cleaned_line.replace('###', '').strip(), 0, 'L')
             pdf.set_text_color(30, 41, 59)
             pdf.ln(1)
         elif line.startswith('##'):
             pdf.set_font('Helvetica', 'B', 12)
             pdf.set_text_color(20, 25, 35)
-            pdf.cell(0, 10, cleaned_line.replace('##', '').strip(), 0, 1)
+            pdf.multi_cell(190, 7, cleaned_line.replace('##', '').strip(), 0, 'L')
             pdf.set_text_color(30, 41, 59)
             pdf.ln(1)
         elif line.startswith('#'):
             pdf.set_font('Helvetica', 'B', 14)
             pdf.set_text_color(20, 25, 35)
-            pdf.cell(0, 12, cleaned_line.replace('#', '').strip(), 0, 1)
+            pdf.multi_cell(190, 8, cleaned_line.replace('#', '').strip(), 0, 'L')
             pdf.set_text_color(30, 41, 59)
             pdf.ln(2)
-        elif line.startswith('-') or line.startswith('*'):
+        elif (line.startswith('-') or line.startswith('*')) and not (line.startswith('**') or line.startswith('__')):
             pdf.set_font('Helvetica', '', 10)
             bullet_text = cleaned_line[1:].strip()
             # Draw a custom HIA blue bullet point block
