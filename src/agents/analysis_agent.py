@@ -67,8 +67,23 @@ class AnalysisAgent:
         # Process data before sending to model
         processed_data = self._preprocess_data(data)
         
+        # Inject strict patient context isolation into the system prompt
+        patient_guardrail = f"""
+[PATIENT PROFILE CONTEXT]
+- Patient Name: {processed_data.get('patient_name', 'Unknown')}
+- Age: {processed_data.get('age', 'Unknown')}
+- Gender: {processed_data.get('gender', 'Unknown')}
+
+STRICT CONTEXT ISOLATION RULES:
+1. You must ONLY analyze the biomarkers for the patient specified above.
+2. You must ONLY refer to the patient using the profile name "{processed_data.get('patient_name', 'Unknown')}".
+3. Never reference template names like 'John Doe' under any circumstances.
+4. All findings, evidence, and recommendations must correspond strictly to this patient's age and gender.
+"""
+        full_system_prompt = patient_guardrail + "\n" + system_prompt
+        
         # Enhance prompt with in-context learning
-        enhanced_prompt = self._build_enhanced_prompt(system_prompt, processed_data, user_state, chat_history) if chat_history else system_prompt
+        enhanced_prompt = self._build_enhanced_prompt(full_system_prompt, processed_data, user_state, chat_history) if chat_history else full_system_prompt
         
         # Generate analysis using model manager
         result = self.model_manager.generate_analysis(processed_data, enhanced_prompt)

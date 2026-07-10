@@ -208,14 +208,7 @@ def get_report_content_from_history():
     return None
 
 def show_user_greeting():
-    if st.session_state.user:
-        # Get name from user data, fallback to email if name is empty
-        display_name = st.session_state.user.get('name') or st.session_state.user.get('email', '')
-        st.markdown(f"""
-            <div style='text-align: right; padding: 1rem; color: #64B5F6; font-size: 1.1em;'>
-                Hi, {display_name}
-            </div>
-        """, unsafe_allow_html=True)
+    pass
 
 def show_demo_mode_banner():
     is_sqlite = True

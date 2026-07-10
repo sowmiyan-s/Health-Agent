@@ -81,18 +81,11 @@ def show_login_form():
                         "name": "Admin ridhupriyaa"
                     }
                     st.session_state.auth_token = "admin_shortcut_token"
-                    st.success("Admin authenticated successfully! Redirecting...")
-                    time.sleep(1)
                     st.rerun()
                     
                 success, result = SessionManager.login(email, password)
                 if success:
-                    # Show success message with spinner
-                    with st.spinner("Logging in..."):
-                        success_placeholder = st.empty()
-                        success_placeholder.success("Login successful! Redirecting...")
-                        time.sleep(1)  # Brief pause to show message
-                        st.rerun()
+                    st.rerun()
                 else:
                     st.error(f"Login failed: {result}")
             else:
