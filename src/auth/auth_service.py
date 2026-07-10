@@ -274,6 +274,24 @@ class AuthService:
             except Exception as e:
                 return False, str(e)
 
+    def update_session_title(self, session_id, title):
+        if self.db_mode == "sqlite":
+            try:
+                from services.db_service import update_chat_session_title_db
+                success, error = update_chat_session_title_db(session_id, title)
+                return success, error
+            except Exception as e:
+                return False, str(e)
+        else:
+            try:
+                self.supabase.table('chat_sessions')\
+                    .update({'title': title})\
+                    .eq('id', session_id)\
+                    .execute()
+                return True, None
+            except Exception as e:
+                return False, str(e)
+
     def get_user_sessions(self, user_id):
         if self.db_mode == "sqlite":
             try:

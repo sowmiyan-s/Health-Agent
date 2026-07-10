@@ -189,3 +189,18 @@ def set_config_db(key, value):
     )
     conn.commit()
     conn.close()
+
+def update_chat_session_title_db(session_id, title):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "UPDATE chat_sessions SET title = ? WHERE id = ?",
+            (title, session_id)
+        )
+        conn.commit()
+        return True, None
+    except Exception as e:
+        return False, str(e)
+    finally:
+        conn.close()

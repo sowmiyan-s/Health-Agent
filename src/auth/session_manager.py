@@ -177,6 +177,13 @@ class SessionManager:
         return st.session_state.auth_service.delete_session(session_id)
     
     @staticmethod
+    def update_session_title(session_id, title):
+        """Update a chat session's title."""
+        if not SessionManager.is_authenticated():
+            return False, "Not authenticated"
+        return st.session_state.auth_service.update_session_title(session_id, title)
+    
+    @staticmethod
     def logout():
         """Logout user and clear session."""
         if 'auth_service' in st.session_state:

@@ -7,12 +7,18 @@ def show_sidebar():
     with st.sidebar:
         st.title("Chat Sessions")
         
-        if st.button("New Analysis Session", use_container_width=True):
+        new_sess_title = st.text_input("New Analysis Name", placeholder="e.g. June Biomarkers", label_visibility="collapsed", key="sidebar_new_sess_title")
+        if st.button("New Analysis Session", use_container_width=True, type="primary"):
             st.session_state.show_admin = False
             if st.session_state.user and 'id' in st.session_state.user:
-                success, session = SessionManager.create_chat_session()
+                title = new_sess_title.strip() if new_sess_title.strip() else "New Analysis"
+                success, session = st.session_state.auth_service.create_session(
+                    st.session_state.user['id'],
+                    title=title
+                )
                 if success:
                     st.session_state.current_session = session
+                    # Clear query params or force rerun to update sidebar input
                     st.rerun()
                 else:
                     st.error("Failed to create session")

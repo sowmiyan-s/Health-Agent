@@ -112,13 +112,24 @@ def show_welcome_screen():
     
     col1, col2, col3 = st.columns([2, 3, 2])
     with col2:
+        welcome_sess_name = st.text_input("Analysis Session Name", placeholder="e.g. My Blood Report", label_visibility="collapsed", key="welcome_new_sess_title")
         if st.button("Create New Analysis Session", use_container_width=True, type="primary"):
-            success, session = SessionManager.create_chat_session()
-            if success:
-                st.session_state.current_session = session
-                st.rerun()
+            st.session_state.show_admin = False
+            if st.session_state.user and 'id' in st.session_state.user:
+                title = welcome_sess_name.strip() if welcome_sess_name.strip() else "New Analysis"
+                success, session = st.session_state.auth_service.create_session(
+                    st.session_state.user['id'],
+                    title=title
+                )
+                if success:
+                    st.session_state.current_session = session
+                    st.rerun()
+                else:
+                    st.error("Failed to create session")
             else:
-                st.error("Failed to create session")
+                st.error("Please log in again")
+                SessionManager.logout()
+                st.rerun()
 
 def show_chat_history():
     import re
@@ -255,7 +266,39 @@ def main():
 
     # Main chat area
     if st.session_state.get('current_session'):
-        st.title(st.session_state.current_session['title'])
+        current_sess = st.session_state.current_session
+        
+        # Session title editing interface
+        if 'editing_sess_id' not in st.session_state:
+            st.session_state.editing_sess_id = None
+            
+        if st.session_state.editing_sess_id == current_sess['id']:
+            col_inp, col_btn1, col_btn2 = st.columns([6, 1, 1])
+            with col_inp:
+                new_title = st.text_input("Rename Analysis Session", value=current_sess['title'], label_visibility="collapsed", key="rename_sess_input")
+            with col_btn1:
+                if st.button("Save", type="primary", use_container_width=True, key="save_sess_title_btn"):
+                    if new_title.strip():
+                        success, err = SessionManager.update_session_title(current_sess['id'], new_title.strip())
+                        if success:
+                            st.session_state.current_session['title'] = new_title.strip()
+                            st.session_state.editing_sess_id = None
+                            st.rerun()
+                        else:
+                            st.error(f"Error: {err}")
+            with col_btn2:
+                if st.button("Cancel", use_container_width=True, key="cancel_sess_title_btn"):
+                    st.session_state.editing_sess_id = None
+                    st.rerun()
+        else:
+            col_title, col_edit = st.columns([8, 2])
+            with col_title:
+                st.title(current_sess['title'])
+            with col_edit:
+                st.markdown("<div style='margin-top: 1.2rem;'></div>", unsafe_allow_html=True)
+                if st.button("Rename Analysis 📝", use_container_width=True, key="rename_sess_trigger_btn"):
+                    st.session_state.editing_sess_id = current_sess['id']
+                    st.rerun()
         
         # Extract and show biomarker dashboard if report is present in session history
         report_content = get_report_content_from_history()
